@@ -54,7 +54,11 @@ namespace JamaaTech.Smpp.Net.Lib
         #region Methods
         public bool WaitForAlert()
         {
+#if NET_CORE
+            vTimedOut = !vNotifyEvent.WaitOne(vTimeOut);
+#else
             vTimedOut = !vNotifyEvent.WaitOne(vTimeOut,false);
+#endif
             return !vTimedOut;
         }
 
@@ -62,6 +66,6 @@ namespace JamaaTech.Smpp.Net.Lib
         {
             vNotifyEvent.Set();
         }
-        #endregion
+#endregion
     }
 }

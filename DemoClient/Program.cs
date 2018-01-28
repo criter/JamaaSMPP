@@ -56,7 +56,7 @@ namespace DemoClient
                 SystemID = "smppclient1",
                 Password = "password",
                 Host = "localhost",
-                Port = 5016,
+                Port = 2775,
                 SystemType = "5750",
                 DefaultServiceType = "5750",
                 SourceAddress = "5750",

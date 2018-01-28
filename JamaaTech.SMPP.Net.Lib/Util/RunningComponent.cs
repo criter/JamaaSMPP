@@ -70,7 +70,10 @@ namespace JamaaTech.Smpp.Net.Lib.Util
                 vStopOnNextCycle = true; //Prevent running thread from continue looping
                 if (!allowCompleteCycle)
                 {
+#if NET_CORE
+#else
                     vRunningThread.Abort(); //Abort owner thread
+#endif                    
                     vRunningThread.Join(); //Wait until thread abort is complete
                     vRunning = false;
                     vRunningThread = null;

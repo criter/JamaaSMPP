@@ -106,15 +106,15 @@ namespace JamaaTech.Smpp.Net.Lib.Networking
              * - The route to the destination host is not known
              * - Connection request to the remote host timed out
              */
-            switch (exception.NativeErrorCode)
+            switch (exception.SocketErrorCode)
             {
-                case 10050: //WSAENETDOWN -- The network is down
-                case 10051: //WSAENETUNREACH -- The network is unreachable
-                case 10060: //WSAETIMEDOUT -- Connection time out
-                case 10061: //WSAECONNREFUSED -- No specified port is in a listening state on the remote machine
-                case 10064: //WSAHOSTDOWN -- The remote host is down
-                case 10065: //WSAHOSTUNREACH -- The remote host is unreachable
-                case 11001: //WSAHOST_NOT_FOUND -- Host not found, no such host is known
+                case SocketError.NetworkDown: //WSAENETDOWN -- The network is down
+                case SocketError.NetworkUnreachable: // 10051 //WSAENETUNREACH -- The network is unreachable
+                case SocketError.TimedOut: // 10060: //WSAETIMEDOUT -- Connection time out
+                case SocketError.ConnectionRefused: // 10061: //WSAECONNREFUSED -- No specified port is in a listening state on the remote machine
+                case SocketError.HostDown: // 10064: //WSAHOSTDOWN -- The remote host is down
+                case SocketError.HostUnreachable: // 10065: //WSAHOSTUNREACH -- The remote host is unreachable
+                case SocketError.HostNotFound: // 11001: //WSAHOST_NOT_FOUND -- Host not found, no such host is known
                     //Wrap this exception in a TcpIpConnectionException exception and throw
                     throw new TcpIpConnectionException(exception);
                 default:
@@ -161,15 +161,15 @@ namespace JamaaTech.Smpp.Net.Lib.Networking
              * Such situations will render the session incapable to serve
              * any subsequent requests.
              */
-            switch (exception.NativeErrorCode)
+            switch (exception.SocketErrorCode)
             {
-                case 10050: //WSAENETDOWN -- Network is down
-                case 10052: //WSAENETRESET -- Connection broken due to failure in connection
-                case 10053: //WSAECONNABORTED -- Connection was aborted by a software in the host machine
-                case 10054: //WSAECONNRESET -- Remote host forcebly closed connection
-                case 10057: //WSAENOTCONN -- Socket is not connected
-                case 10064: //WSAHOSTDOWN -- Remote host is down
-                case 10101: //WSAEDISCON -- Remote party has called a graceful shutdown
+                case SocketError.NetworkDown: // 10050: //WSAENETDOWN -- Network is down
+                case SocketError.NetworkReset: // 10052: //WSAENETRESET -- Connection broken due to failure in connection
+                case SocketError.ConnectionAborted: // 10053: //WSAECONNABORTED -- Connection was aborted by a software in the host machine
+                case SocketError.ConnectionReset: // 10054: //WSAECONNRESET -- Remote host forcebly closed connection
+                case SocketError.NotConnected: // 10057: //WSAENOTCONN -- Socket is not connected
+                case SocketError.HostDown: // 10064: //WSAHOSTDOWN -- Remote host is down
+                case SocketError.Disconnecting: // 10101: //WSAEDISCON -- Remote party has called a graceful shutdown
                     //Wrap this exception in a new exception
                     throw new TcpIpSessionClosedException(exception);
                 default:
@@ -302,10 +302,15 @@ namespace JamaaTech.Smpp.Net.Lib.Networking
         {
             //shutdown socket
             vSocket.Shutdown(SocketShutdown.Both);
+#if NET_CORE
+             //dispose socket
+            vSocket.Dispose();
+#else
             //disconnect socket
             vSocket.Disconnect(false);
             //Close to release any resources claimed by the socket instance
             vSocket.Close();
+#endif
             RaiseSessionClosedEvent(reason, exception);
         }
 
@@ -358,7 +363,7 @@ namespace JamaaTech.Smpp.Net.Lib.Networking
             session.vIsAlive = true;
             return session;
         }
-        #endregion
-        #endregion
+#endregion
+#endregion
     }
 }

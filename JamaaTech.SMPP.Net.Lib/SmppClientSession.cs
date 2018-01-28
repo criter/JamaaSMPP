@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using System.Text;
 using JamaaTech.Smpp.Net.Lib.Networking;
 using JamaaTech.Smpp.Net.Lib.Protocol;
-using System.Timers;
+using System.Threading;
 using System.Net.Sockets;
 using System.Net;
 using System.Diagnostics;
@@ -39,6 +39,7 @@ namespace JamaaTech.Smpp.Net.Lib
         private bool vIsAlive;
         private SmppSessionState vState;
         private int vDefaultResponseTimeout;
+        private int vEnquireLinkInterval;
 
         private string vSmscId;
         private string vSystemId;
@@ -69,7 +70,7 @@ namespace JamaaTech.Smpp.Net.Lib
         private SmppClientSession(SmppEncodingService smppEncodingService)
         {
             vSmppEncodingService = smppEncodingService;
-            InitializeTimer();
+            vEnquireLinkInterval = DEFAULT_DELAY;
             vSyncRoot = new object();
             vDefaultResponseTimeout = 5000;
             vSmscId = "";
@@ -118,14 +119,15 @@ namespace JamaaTech.Smpp.Net.Lib
 
         public int EnquireLinkInterval
         {
-            get { return (int)vTimer.Interval; }
+            get { return vEnquireLinkInterval; }
             set
             {
                 if (value < 1000)//If the value is less than one second
                 {
                     throw new ArgumentException("EnqureLink interval cannot be less than 1000 millseconds (1 second)");
                 }
-                vTimer.Interval = (double)value;
+                vEnquireLinkInterval = value;
+                vTimer.Change(vEnquireLinkInterval, vEnquireLinkInterval);
             }
         }
 
@@ -351,7 +353,7 @@ namespace JamaaTech.Smpp.Net.Lib
             vAddressTon = bindInfo.AddressTon;
             vAddressNpi = bindInfo.AddressNpi;
             //Start timer
-            vTimer.Start();
+            InitializeTimer();
             vIsAlive = true;
             switch (bindReq.Header.CommandType)
             {
@@ -369,13 +371,12 @@ namespace JamaaTech.Smpp.Net.Lib
 
         private void InitializeTimer()
         {
-            vTimer = new Timer(DEFAULT_DELAY);
-            vTimer.Elapsed += new ElapsedEventHandler(TimerCallback);
+            vTimer = new Timer(vTimerCallback, null, vEnquireLinkInterval, vEnquireLinkInterval);
         }
 
         private void DestroyTimer()
         {
-            try { vTimer.Stop(); vTimer.Close(); }
+            try { vTimer.Dispose(); }
             catch {/*Silent catch*/}
         }
 
@@ -392,7 +393,7 @@ namespace JamaaTech.Smpp.Net.Lib
             return (int)(pdu.AllowedSession & vState) != 0;
         }
 
-        private void TimerCallback(object sender, ElapsedEventArgs e)
+        private void vTimerCallback(object state)
         {
             EnquireLink enqLink = new EnquireLink(SmppEncodingService);
             //Send EnquireLink with 5 seconds response timeout
