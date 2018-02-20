@@ -41,9 +41,25 @@ namespace DemoClient
             msg.UserMessageReference = Guid.NewGuid().ToString();
             Console.WriteLine($"msg.UserMessageReference: {msg.UserMessageReference}");
 
-            client.SendMessage(msg);
+            //client.SendMessage(msg);
+
+            client.BeginSendMessage(msg, SendMessageCompleteCallback, client);
 
             Console.ReadLine();
+        }
+
+        private static void SendMessageCompleteCallback(IAsyncResult result)
+        {
+            try
+            {
+                SmppClient client = (SmppClient)result.AsyncState;
+                client.EndSendMessage(result);
+            }
+            catch (Exception e)
+            {
+
+
+            }
         }
 
         private static ISmppConfiguration GetSmppConfiguration()
@@ -56,7 +72,7 @@ namespace DemoClient
                 SystemID = "smppclient1",
                 Password = "password",
                 Host = "localhost",
-                Port = 2775,
+                Port = 5016,
                 SystemType = "5750",
                 DefaultServiceType = "5750",
                 SourceAddress = "5750",
